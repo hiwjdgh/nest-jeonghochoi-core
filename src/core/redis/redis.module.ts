@@ -1,6 +1,5 @@
 import { DynamicModule, Module } from '@nestjs/common';
 import Redis from 'ioredis';
-import { ConfigService } from '../config/config.service';
 import { REDIS_CLIENT, REDIS_PUB, REDIS_SUB } from './redis.constants';
 import { RedisOptions } from './redis.options';
 import { RedisService } from './redis.service';
@@ -8,25 +7,26 @@ import { RedisService } from './redis.service';
 @Module({})
 export class RedisModule {
     static forRoot(options?: RedisOptions): DynamicModule {
-        if (options?.enabled === false) {
-            return {
-                module: RedisModule,
-                providers: [
-                    {
-                        provide: RedisService,
-                        useValue: null,
-                    },
-                ],
-                exports: [RedisService],
-            };
+        if (!options) {
+            throw new Error('[RedisModule] options are required');
         }
 
-        const createClient = (config: ConfigService): Redis => {
+        if (!options.host) {
+            throw new Error('[RedisModule] host is required');
+        }
+
+        if (!options.port) {
+            throw new Error('[RedisModule] port is required');
+        }
+
+        const createClient = (): Redis => {
             return new Redis({
-                host: config.redis.host,
-                port: config.redis.port,
-                keyPrefix: options?.keyPrefix,
-                enableReadyCheck: options?.enableReadyCheck ?? true,
+                host: options.host,
+                port: options.port,
+                password: options.password,
+                db: options.db,
+                keyPrefix: options.keyPrefix,
+                enableReadyCheck: options.enableReadyCheck ?? true,
             });
         };
 
@@ -35,21 +35,15 @@ export class RedisModule {
             providers: [
                 {
                     provide: REDIS_CLIENT,
-                    inject: [ConfigService],
-                    useFactory: (config: ConfigService): Redis =>
-                        createClient(config),
+                    useFactory: createClient,
                 },
                 {
                     provide: REDIS_PUB,
-                    inject: [ConfigService],
-                    useFactory: (config: ConfigService): Redis =>
-                        createClient(config),
+                    useFactory: createClient,
                 },
                 {
                     provide: REDIS_SUB,
-                    inject: [ConfigService],
-                    useFactory: (config: ConfigService): Redis =>
-                        createClient(config),
+                    useFactory: createClient,
                 },
                 RedisService,
             ],

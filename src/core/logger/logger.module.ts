@@ -6,19 +6,18 @@ import { RequestContextService } from '../request-context/request-context.servic
 @Module({})
 export class LoggerModule {
     static forRoot(options?: LoggerOptions): DynamicModule {
-        if (options?.enabled === false) {
-            return {
-                module: LoggerModule,
-                providers: [],
-                exports: [],
-            };
+        if (!options) {
+            throw new Error('[LoggerOptions] options are required');
         }
 
-        const resolved: Required<Pick<LoggerOptions, 'level' | 'pretty'>> &
-            LoggerOptions = {
-            level: options?.level ?? 'info',
-            pretty: options?.pretty ?? false,
-            serviceName: options?.serviceName,
+        if (!options.serviceName) {
+            throw new Error('[LoggerOptions] serviceName is required');
+        }
+
+        const resolved = {
+            level: options.level ?? 'info',
+            pretty: options.pretty ?? false,
+            serviceName: options.serviceName,
         };
 
         return {
@@ -28,14 +27,7 @@ export class LoggerModule {
                     provide: LoggerService,
                     inject: [RequestContextService],
                     useFactory: (context: RequestContextService) =>
-                        new LoggerService(
-                            {
-                                level: resolved.level,
-                                pretty: resolved.pretty,
-                                serviceName: resolved.serviceName,
-                            },
-                            context,
-                        ),
+                        new LoggerService(resolved, context),
                 },
             ],
             exports: [LoggerService],

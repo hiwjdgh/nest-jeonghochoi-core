@@ -1,10 +1,10 @@
 {
     "name": "@jeonghochoi/core",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "NestJS Core infrastructure module",
     "author": "jeonghochoi",
     "license": "UNLICENSED",
-    "private": true,
+    "private": false,
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "files": [

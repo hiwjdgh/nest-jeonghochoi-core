@@ -1,54 +1,88 @@
 import { DynamicModule, Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigService } from '../config/config.service';
+import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { DatabaseOptions } from './database.options';
 
 @Module({})
 export class DatabaseModule {
-    static forRoot(options: DatabaseOptions = {}): DynamicModule {
+    static forRoot(options: DatabaseOptions): DynamicModule {
+        if (!options) {
+            throw new Error('[DatabaseModule] options are required');
+        }
+
+        if (!options.type) {
+            throw new Error('[DatabaseModule] type is required');
+        }
+
+        if (!options.host) {
+            throw new Error('[DatabaseModule] host is required');
+        }
+
+        if (!options.port) {
+            throw new Error('[DatabaseModule] port is required');
+        }
+
+        if (!options.username) {
+            throw new Error('[DatabaseModule] username is required');
+        }
+
+        if (!options.password) {
+            throw new Error('[DatabaseModule] password is required');
+        }
+
+        if (!options.database) {
+            throw new Error('[DatabaseModule] database is required');
+        }
+
+        if (!options.type) {
+            throw new Error('[DatabaseModule] type is required');
+        }
+
+        let ormOptions: TypeOrmModuleOptions;
+
+        if (options.type === 'postgres') {
+            ormOptions = {
+                type: 'postgres',
+                host: options.host,
+                port: options.port,
+                username: options.username,
+                password: options.password,
+                database: options.database,
+
+                autoLoadEntities: true,
+                synchronize: options.synchronize ?? false,
+                logging: options.logging ?? false,
+
+                // ✅ postgres 전용
+                ssl: options.ssl ? { rejectUnauthorized: false } : undefined,
+            };
+        } else if (options.type === 'mssql') {
+            ormOptions = {
+                type: 'mssql',
+                host: options.host,
+                port: options.port,
+                username: options.username,
+                password: options.password,
+                database: options.database,
+
+                autoLoadEntities: true,
+                synchronize: options.synchronize ?? false,
+                logging: options.logging ?? false,
+
+                // ✅ mssql 전용
+                options: {
+                    encrypt: true,
+                    trustServerCertificate: true,
+                },
+            };
+        } else {
+            throw new Error(`[DatabaseModule] Unsupported database type`);
+        }
+
         return {
             module: DatabaseModule,
             imports: [
-                TypeOrmModule.forRootAsync({
-                    inject: [ConfigService],
-                    useFactory: (config: ConfigService) => {
-                        const db = config.db;
-
-                        const baseOptions = {
-                            host: db.host,
-                            port: db.port,
-                            username: db.user,
-                            password: db.password,
-                            database: db.name,
-
-                            autoLoadEntities: true,
-                            synchronize: options.synchronize ?? false,
-                            logging: options.logging ?? false,
-                        };
-
-                        if (db.type === 'postgres') {
-                            return {
-                                type: 'postgres',
-                                ...baseOptions,
-                                ssl: options.ssl
-                                    ? { rejectUnauthorized: false }
-                                    : false,
-                            };
-                        }
-
-                        if (db.type === 'mssql') {
-                            return {
-                                type: 'mssql',
-                                ...baseOptions,
-                                options: {
-                                    encrypt: true,
-                                    trustServerCertificate: true,
-                                },
-                            };
-                        }
-
-                        throw new Error(`Unsupported DB_TYPE`);
-                    },
+                TypeOrmModule.forRoot({
+                    ...ormOptions,
                 }),
             ],
             exports: [TypeOrmModule],
