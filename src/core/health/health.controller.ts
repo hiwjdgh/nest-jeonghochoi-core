@@ -23,10 +23,15 @@ export class HealthController {
     @Get('ready')
     @HealthCheck()
     readiness() {
-        const checks: HealthIndicatorFunction[] = [
-            // ✅ 반드시 함수로 감싸기
-            () => this.db.pingCheck('database'),
-        ];
+        const checks: HealthIndicatorFunction[] = [];
+
+        const db = this.db;
+
+        if (db) {
+            checks.push(async () => {
+                return this.db.pingCheck('database');
+            });
+        }
 
         const redis = this.redis;
 

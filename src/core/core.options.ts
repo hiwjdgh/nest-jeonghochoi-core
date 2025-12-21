@@ -1,4 +1,4 @@
-import { DatabaseOptions } from './database';
+import { DatabaseOptions } from './database/database.options';
 import { LoggerOptions } from './logger';
 import { RedisOptions } from './redis';
 

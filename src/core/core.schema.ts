@@ -4,7 +4,7 @@ export const coreOptionsSchema = z.object({
     logger: z
         .object({
             enabled: z.boolean().optional(),
-            serviceName: z.string().min(1),
+            appName: z.string().min(1),
         })
         .optional(),
 
@@ -15,16 +15,10 @@ export const coreOptionsSchema = z.object({
             port: z.number(),
         })
         .optional(),
-
     database: z
         .object({
             enabled: z.boolean().optional(),
-            type: z.enum(['postgres', 'mssql']),
-            host: z.string(),
-            port: z.number(),
-            username: z.string(),
-            password: z.string(),
-            database: z.string(),
+            registry: z.object().optional(),
         })
         .optional(),
 });

@@ -34,12 +34,10 @@ export class CoreModule implements NestModule {
         const imports: DynamicModule['imports'] = [];
         const exports: DynamicModule['exports'] = [];
 
-        // Logger (선택)
-        if (parsed.logger?.enabled !== false) {
-            if (parsed.logger) {
-                imports.push(LoggerModule.forRoot(parsed.logger));
-                exports.push(LoggerModule);
-            }
+        // Logger (필수)
+        if (parsed.logger) {
+            imports.push(LoggerModule.forRoot(parsed.logger));
+            exports.push(LoggerModule);
         }
 
         // Redis (선택)
@@ -52,8 +50,8 @@ export class CoreModule implements NestModule {
 
         // Database (선택)
         if (parsed.database?.enabled !== false) {
-            if (parsed.database) {
-                imports.push(DatabaseModule.forRoot(parsed.database));
+            if (parsed.database?.registry) {
+                imports.push(DatabaseModule.forRoot(parsed.database.registry));
                 exports.push(DatabaseModule);
             }
         }

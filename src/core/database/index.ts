@@ -1,2 +1,4 @@
+export * from './contracts';
+export * from './registry';
+export * from './resolver';
 export * from './database.module';
-export * from './database.options';

@@ -10,14 +10,14 @@ export class LoggerModule {
             throw new Error('[LoggerOptions] options are required');
         }
 
-        if (!options.serviceName) {
-            throw new Error('[LoggerOptions] serviceName is required');
+        if (!options.appName) {
+            throw new Error('[LoggerOptions] appName is required');
         }
 
         const resolved = {
             level: options.level ?? 'info',
             pretty: options.pretty ?? false,
-            serviceName: options.serviceName,
+            appName: options.appName,
         };
 
         return {

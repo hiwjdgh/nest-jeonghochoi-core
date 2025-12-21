@@ -10,8 +10,10 @@
 - Global Config Module (Zod 기반)
 - Structured Logger (requestId 기반)
 - Database Module (TypeORM)
-    - PostgreSQL
-    - SQL Server
+    - Multi Database 지원
+    - Multi Tenant (Schema / DB per tenant)
+    - Request / Event Context 기반 DB 라우팅
+    - PostgreSQL / SQL Server
 - Redis Module (ioredis)
 - HTTP Request Context (AsyncLocalStorage)
 - HTTP Access Log Middleware
@@ -46,12 +48,33 @@ import { CoreModule } from '@jeonghochoi/core';
                 serviceName: 'user-api',
             },
             database: {
-                type: 'postgres',
-                host: 'localhost',
-                port: 5432,
-                username: 'user',
-                password: 'password',
-                database: 'app',
+                main: {
+                    enabled: true,
+                    type: 'postgres',
+                    supportsSchema: true,
+                    options: {
+                        type: 'postgres',
+                        host: 'localhost',
+                        port: 5432,
+                        username: 'user',
+                        password: 'password',
+                        database: 'app',
+                    },
+                },
+
+                billing: {
+                    enabled: true,
+                    type: 'mssql',
+                    supportsSchema: false,
+                    options: {
+                        type: 'mssql',
+                        host: 'localhost',
+                        port: 1433,
+                        username: 'billing',
+                        password: 'password',
+                        database: 'billing',
+                    },
+                },
             },
             redis: {
                 enabled: true,
@@ -115,23 +138,36 @@ export class UserService {
 
 ---
 
-## 🗄️ Database
+## 🗄️ Database (Multi-Tenant Runtime)
 
-### 지원 DB
+### 핵심 특징
 
-- PostgreSQL
-- SQL Server
+- 단일 DB 설정 ❌
+- `TypeOrmModule.forRoot()` ❌
+- **Database Registry 기반 동적 연결 ⭕**
+- 요청 / 이벤트 Context 기반 실행 ⭕
 
-### 설정 예시
+---
+
+### Database 사용 (Runtime Resolve)
 
 ```ts
-database: {
-  type: 'postgres',
-  host: 'localhost',
-  port: 5432,
-  username: 'user',
-  password: 'password',
-  database: 'app',
+@Injectable()
+export class ChargerService {
+    constructor(private readonly resolver: DatabaseConnectionResolver) {}
+
+    async findAll(ctx: DatabaseRequestContext) {
+        const ds = await this.resolver.resolve(ctx);
+        return ds.getRepository(ChargerEntity).find();
+    }
+}
+```
+
+```ts
+// ctx 예시
+{
+  databaseKey: 'main',
+  schema: 'tenant_a',
 }
 ```
 
