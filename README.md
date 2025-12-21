@@ -44,8 +44,7 @@ import { CoreModule } from '@jeonghochoi/core';
     imports: [
         CoreModule.forRoot({
             logger: {
-                enabled: true,
-                serviceName: 'user-api',
+                appName: 'user-api',
             },
             database: {
                 main: {

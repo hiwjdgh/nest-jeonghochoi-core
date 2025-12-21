@@ -1,6 +1,6 @@
 {
     "name": "@jeonghochoi/core",
-    "version": "0.1.2",
+    "version": "0.1.3",
     "description": "NestJS Core infrastructure module",
     "author": "jeonghochoi",
     "license": "UNLICENSED",
