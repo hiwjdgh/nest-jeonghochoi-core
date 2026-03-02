@@ -3,6 +3,7 @@ import { JwtModuleOptions } from './jwt/jwt.options';
 import { LoggerOptions } from './logger';
 import { RedisOptions } from './redis';
 import { RbacModuleOptions } from './rbac/rbac.module';
+import { UploaderOptions } from './file/uploader/uploder.options';
 
 export interface CoreOptions {
     database?: DatabaseOptions;
@@ -10,4 +11,6 @@ export interface CoreOptions {
     logger?: LoggerOptions;
     rbac?: RbacModuleOptions & { enabled?: boolean };
     redis?: RedisOptions;
+    file?: FileOptions & { enabled?: boolean };
+    mail?: 
 }

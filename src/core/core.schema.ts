@@ -43,6 +43,58 @@ const databaseDefinitionSchema = z.union([
     mssqlDefinitionSchema,
 ]);
 
+const SesConfigSchema = z.object({
+    region: z.string(),
+    credentials: z.object({
+        accessKeyId: z.string(),
+        secretAccessKey: z.string(),
+    }),
+    from: z.string(),
+});
+
+const SmtpConfigSchema = z.object({
+    host: z.string(),
+    port: z.coerce.number(),
+    secure: z.boolean().default(false),
+    user: z.string(),
+    password: z.string(),
+    from: z.string(),
+});
+
+const MailSchema = z.union([SesConfigSchema, SmtpConfigSchema]);
+
+const CsvConfigScema = z.object({
+    path: z.string(),
+});
+
+const ExcelConfigScema = z.object({
+    path: z.string(),
+});
+
+const FileWriterSchema = z.union([CsvConfigScema, ExcelConfigScema]);
+
+const FtpConfigSchema = z.object({
+    host: z.string(),
+    port: z.coerce.number().default(21),
+    user: z.string(),
+    password: z.string(),
+    secure: z.boolean().default(false),
+    basePath: z.string().optional(),
+});
+
+export type FtpConfig = z.infer<typeof FtpConfigSchema>;
+
+const S3ConfigSchema = z.object({
+    region: z.string(),
+    bucket: z.string(),
+    accessKeyId: z.string().optional(),
+    secretAccessKey: z.string().optional(),
+});
+
+export type S3Config = z.infer<typeof S3ConfigSchema>;
+
+const FileUploaderSchema = z.union([FtpConfigSchema, S3ConfigSchema]);
+
 export const coreOptionsSchema = z.object({
     logger: z
         .object({
@@ -81,4 +133,15 @@ export const coreOptionsSchema = z.object({
             permissionChecker: z.custom<object>().optional(),
         })
         .optional(),
+
+    file: z.object({
+        enable: z.boolean().optional(),
+        uploader: z.record(z.string(), FileUploaderSchema).optional(),
+        writer: z.record(z.string(), FileWriterSchema).optional,
+    }),
+
+    mail: z.object({
+        enable: z.boolean().optional(),
+        registry: z.record(z.string(), MailSchema).optional(),
+    }),
 });

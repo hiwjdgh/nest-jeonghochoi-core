@@ -84,6 +84,19 @@ export class CoreModule implements NestModule {
             }
         }
 
+        // RBAC (선택)
+        if (parsed.rbac?.enabled !== false) {
+            if (parsed.rbac) {
+                imports.push(
+                    RbacModule.forRoot({
+                        contextProvider: parsed.rbac.contextProvider,
+                        permissionChecker: parsed.rbac.permissionChecker,
+                    }),
+                );
+                exports.push(RbacModule);
+            }
+        }
+
         return {
             module: CoreModule,
             global: true,
