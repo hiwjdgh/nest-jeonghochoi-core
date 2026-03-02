@@ -14,4 +14,12 @@ export class ConnectionCache {
     has(key: string): boolean {
         return this.cache.has(key);
     }
+
+    values(): DataSource[] {
+        return [...this.cache.values()];
+    }
+
+    clear(): void {
+        this.cache.clear();
+    }
 }

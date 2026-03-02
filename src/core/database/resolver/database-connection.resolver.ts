@@ -4,6 +4,8 @@ import { DatabaseRegistry } from '../registry';
 import { ConnectionCache } from '../cache';
 
 export class DatabaseConnectionResolver {
+    private readonly inFlight = new Map<string, Promise<DataSource>>();
+
     constructor(
         private readonly registry: DatabaseRegistry,
         private readonly cache: ConnectionCache,
@@ -26,10 +28,22 @@ export class DatabaseConnectionResolver {
             return this.cache.get(cacheKey)!;
         }
 
-        const ds = await this.createDataSource(definition, ctx.schema);
-        this.cache.set(cacheKey, ds);
+        const existingInFlight = this.inFlight.get(cacheKey);
+        if (existingInFlight) {
+            return existingInFlight;
+        }
 
-        return ds;
+        const dsPromise = this.createDataSource(definition, ctx.schema)
+            .then((ds) => {
+                this.cache.set(cacheKey, ds);
+                return ds;
+            })
+            .finally(() => {
+                this.inFlight.delete(cacheKey);
+            });
+
+        this.inFlight.set(cacheKey, dsPromise);
+        return dsPromise;
     }
 
     private buildCacheKey(ctx: DatabaseRequestContext): string {
