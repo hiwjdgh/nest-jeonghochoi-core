@@ -1,305 +1,233 @@
 # @jeonghochoi/core
 
-> **NestJS Core Infrastructure Library**  
-> NestJS 프로젝트에서 공통 인프라(DB, Redis, Logger, Health 등)를 표준화하기 위한 Core 라이브러리
+NestJS 기반 서비스에서 공통 인프라(로깅, DB, Redis, Health, 인증/인가 유틸)를 일관되게 구성하기 위한 Core 라이브러리입니다.
+
+## 프로젝트 구조 요약
+
+- `CoreModule`
+  - 전역(`@Global`) 모듈
+  - `RequestContextMiddleware` + `HttpLoggerMiddleware`를 모든 라우트에 자동 적용
+  - 전역 `HttpExceptionFilter` 등록
+  - 옵션에 따라 Logger/Database/Redis 모듈 동적 로딩
+- `DatabaseModule`
+  - `TypeOrmModule.forRoot()` 패턴 대신 `DatabaseConnectionResolver`로 런타임 연결
+  - `databaseKey + schema` 조합으로 DataSource 캐싱
+- `RedisModule`
+  - client/pub/sub 3개 ioredis 커넥션 제공
+- `HealthModule`
+  - `/health/live`, `/health/ready` 엔드포인트 제공
+- `JwtModule`, `RbacModule`
+  - 앱에서 필요 시 별도 `forRoot()`로 조합
 
 ---
 
-## ✨ Features
+## 설치
 
-- Global Config Module (Zod 기반)
-- Structured Logger (requestId 기반)
-- Database Module (TypeORM)
-    - Multi Database 지원
-    - Multi Tenant (Schema / DB per tenant)
-    - Request / Event Context 기반 DB 라우팅
-    - PostgreSQL / SQL Server
-- Redis Module (ioredis)
-- HTTP Request Context (AsyncLocalStorage)
-- HTTP Access Log Middleware
-- Global Exception Filter
-- Health Check Endpoint (`@nestjs/terminus`)
-
----
-
-## 📦 Installation
+### 1) npm 레지스트리에서 설치
 
 ```bash
 npm install @jeonghochoi/core
 ```
 
-> ⚠️ 이 라이브러리는 **NestJS 기반 프로젝트 전용**입니다.
+### 2) 로컬 패키지(tgz)로 설치 (개발/검증)
+
+라이브러리 저장소에서:
+
+```bash
+npm run build
+npm pack
+```
+
+앱 저장소에서:
+
+```bash
+npm install ../nest-jeonghochoi-core/jeonghochoi-core-0.1.4.tgz
+```
+
+> 파일명 버전(`0.1.4`)은 실제 pack 결과에 맞춰 변경하세요.
 
 ---
 
-## 🚀 Quick Start
+## 앱에서 바로 쓰는 방법
 
-### AppModule 설정
+## 1) AppModule에 CoreModule 등록
 
 ```ts
 import { Module } from '@nestjs/common';
 import { CoreModule } from '@jeonghochoi/core';
 
 @Module({
-    imports: [
-        CoreModule.forRoot({
-            logger: {
-                appName: 'user-api',
+  imports: [
+    CoreModule.forRoot({
+      logger: {
+        appName: 'user-api',
+        level: 'info',
+        pretty: true,
+      },
+      database: {
+        enabled: true,
+        registry: {
+          main: {
+            enabled: true,
+            type: 'postgres',
+            supportsSchema: true,
+            options: {
+              type: 'postgres',
+              host: process.env.DB_HOST,
+              port: Number(process.env.DB_PORT ?? 5432),
+              username: process.env.DB_USER,
+              password: process.env.DB_PASSWORD,
+              database: process.env.DB_NAME,
+              synchronize: false,
+              logging: false,
+              entities: [],
             },
-            database: {
-                main: {
-                    enabled: true,
-                    type: 'postgres',
-                    supportsSchema: true,
-                    options: {
-                        type: 'postgres',
-                        host: 'localhost',
-                        port: 5432,
-                        username: 'user',
-                        password: 'password',
-                        database: 'app',
-                    },
-                },
-
-                billing: {
-                    enabled: true,
-                    type: 'mssql',
-                    supportsSchema: false,
-                    options: {
-                        type: 'mssql',
-                        host: 'localhost',
-                        port: 1433,
-                        username: 'billing',
-                        password: 'password',
-                        database: 'billing',
-                    },
-                },
+          },
+          billing: {
+            enabled: true,
+            type: 'mssql',
+            supportsSchema: false,
+            options: {
+              type: 'mssql',
+              host: process.env.BILLING_DB_HOST,
+              port: Number(process.env.BILLING_DB_PORT ?? 1433),
+              username: process.env.BILLING_DB_USER,
+              password: process.env.BILLING_DB_PASSWORD,
+              database: process.env.BILLING_DB_NAME,
+              synchronize: false,
+              entities: [],
             },
-            redis: {
-                enabled: true,
-                host: 'localhost',
-                port: 6379,
-            },
-        }),
-    ],
+          },
+        },
+      },
+      redis: {
+        enabled: true,
+        host: process.env.REDIS_HOST ?? '127.0.0.1',
+        port: Number(process.env.REDIS_PORT ?? 6379),
+      },
+    }),
+  ],
 })
 export class AppModule {}
 ```
 
----
-
-## ⚙️ CoreModule Options
+## 2) 서비스에서 DatabaseConnectionResolver 사용
 
 ```ts
-export interface CoreModuleOptions {
-    logger?: LoggerOptions;
-    database?: DatabaseOptions;
-    redis?: RedisOptions;
-}
-```
+import { Injectable } from '@nestjs/common';
+import {
+  DatabaseConnectionResolver,
+  DatabaseRequestContext,
+} from '@jeonghochoi/core';
 
----
-
-## 📝 Logger
-
-### LoggerService 사용 예시
-
-```ts
-import { LoggerService } from '@jeonghochoi/core';
-
-@Injectable()
-export class UserService {
-    constructor(private readonly logger: LoggerService) {}
-
-    createUser() {
-        this.logger.log('User created', 'UserService');
-    }
-}
-```
-
-### 로그 특징
-
-- requestId 자동 포함
-- JSON 기반 구조화 로그 (pino)
-- HTTP Access Log 자동 기록
-
-예시 로그:
-
-```json
-{
-    "level": 30,
-    "time": 1765904890235,
-    "requestId": "6df912d7-7eff-4ab4-8c76-b2da8a1d41c2",
-    "context": "UserService",
-    "msg": "User created"
-}
-```
-
----
-
-## 🗄️ Database (Multi-Tenant Runtime)
-
-### 핵심 특징
-
-- 단일 DB 설정 ❌
-- `TypeOrmModule.forRoot()` ❌
-- **Database Registry 기반 동적 연결 ⭕**
-- 요청 / 이벤트 Context 기반 실행 ⭕
-
----
-
-### Database 사용 (Runtime Resolve)
-
-```ts
 @Injectable()
 export class ChargerService {
-    constructor(private readonly resolver: DatabaseConnectionResolver) {}
+  constructor(private readonly resolver: DatabaseConnectionResolver) {}
 
-    async findAll(ctx: DatabaseRequestContext) {
-        const ds = await this.resolver.resolve(ctx);
-        return ds.getRepository(ChargerEntity).find();
-    }
+  async findAll() {
+    const ctx: DatabaseRequestContext = {
+      databaseKey: 'main',
+      schema: 'tenant_a',
+    };
+
+    const dataSource = await this.resolver.resolve(ctx);
+    return dataSource.query('select now()');
+  }
 }
 ```
 
-```ts
-// ctx 예시
-{
-  databaseKey: 'main',
-  schema: 'tenant_a',
-}
-```
-
-> 내부적으로 **TypeORM**을 사용합니다.
-
----
-
-## 🔴 Redis
-
-### 설정 예시
+## 3) 서비스에서 RedisService 사용
 
 ```ts
-redis: {
-  enabled: true,
-  host: 'localhost',
-  port: 6379,
-}
-```
-
-### RedisService 사용
-
-```ts
+import { Injectable } from '@nestjs/common';
 import { RedisService } from '@jeonghochoi/core';
 
 @Injectable()
 export class CacheService {
-    constructor(private readonly redis: RedisService) {}
+  constructor(private readonly redis: RedisService) {}
 
-    async ping() {
-        return this.redis.getClient().ping();
-    }
+  async ping() {
+    return this.redis.getClient().ping();
+  }
 }
 ```
 
-> Redis는 **선택 사항(optional)** 이며  
-> `enabled: false` 설정 시 로드되지 않습니다.
+## 4) Health Check 호출
+
+- Liveness: `GET /health/live`
+- Readiness: `GET /health/ready`
 
 ---
 
-## ❤️ Health Check
+## CoreModule 옵션 타입
 
-### 기본 엔드포인트
-
-```http
-GET /health
+```ts
+export interface CoreOptions {
+  database?: {
+    enabled?: boolean;
+    registry: Record<string, DatabaseDefinition>;
+  };
+  logger?: {
+    appName: string;
+    level?: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
+    pretty?: boolean;
+  };
+  redis?: {
+    enabled?: boolean;
+    host: string;
+    port: number;
+    password?: string;
+    db?: number;
+    keyPrefix?: string;
+    enableReadyCheck?: boolean;
+  };
+}
 ```
 
-응답 예시:
+---
+
+## JWT / RBAC 모듈 사용 (선택)
+
+`CoreModule`과 별개로, 인증/인가가 필요하면 앱에서 직접 등록해서 사용합니다.
+
+```ts
+import { Module } from '@nestjs/common';
+import { JwtModule, RbacModule } from '@jeonghochoi/core';
+
+@Module({
+  imports: [
+    JwtModule.forRoot({
+      secret: process.env.JWT_SECRET!,
+      signOptions: { expiresIn: '1h' },
+    }),
+    RbacModule.forRoot({
+      // contextProvider, permissionChecker 구현체를 앱에서 주입
+    }),
+  ],
+})
+export class AuthModule {}
+```
+
+---
+
+## 주의사항
+
+- `CoreModule`에서 `logger`를 생략하면 로거 모듈이 로딩되지 않습니다.
+- `database.enabled !== false` 이고 `database.registry`가 있어야 DB 모듈이 로딩됩니다.
+- `redis.enabled !== false` 이고 `redis` 옵션이 있어야 Redis 모듈이 로딩됩니다.
+- DB 연결은 요청 시점에 생성되며 캐시됩니다. 앱 종료 시 커넥션 정리 전략은 앱 레벨에서 함께 고려하세요.
+
+---
+
+## Peer Dependencies
 
 ```json
 {
-    "status": "ok",
-    "info": {
-        "database": { "status": "up" },
-        "redis": { "status": "up" }
-    }
-}
-```
-
-- Database / Redis 상태 자동 체크
-- Kubernetes / Load Balancer 헬스체크 용도
-
----
-
-## 🚨 Exception Handling
-
-- Global `HttpExceptionFilter` 자동 적용
-- 500 에러 발생 시:
-    - 서버 로그에 stack trace 기록
-    - 클라이언트 응답에는 내부 정보 미노출
-
----
-
-## 🧠 Design Principles
-
-- `main.ts` 없음 (라이브러리 구조)
-- Nest CLI 비의존
-- example app 포함 ❌
-- 외부 Nest 애플리케이션에서 의존성으로만 사용
-- public API (`index.ts`) 만 노출
-
----
-
-## 🔐 Peer Dependencies
-
-```json
-"peerDependencies": {
   "@nestjs/common": "^11.0.0",
   "@nestjs/core": "^11.0.0"
 }
 ```
 
-> 사용하는 프로젝트의 NestJS 버전을 그대로 따릅니다.
+## License
 
----
-
-## 🧪 Testing & Validation
-
-라이브러리 검증은 **외부 Nest 애플리케이션**에서 수행합니다.
-
-권장 방식:
-
-```bash
-npm pack
-npm install ../jeonghochoi-core-x.y.z.tgz
-```
-
----
-
-## 📌 Versioning Policy
-
-- `0.x.x` : 개발 / 검증 단계
-- `1.0.0` : 사내 표준 Core 확정
-
-| 변경 내용       | 버전  |
-| --------------- | ----- |
-| 기능 추가       | minor |
-| 버그 수정       | patch |
-| Public API 변경 | major |
-
----
-
-## 📄 License
-
-UNLICENSED  
-(사내 전용 라이브러리)
-
----
-
-## ✅ Summary
-
-> **@jeonghochoi/core** 는  
-> NestJS 서비스들의 **공통 인프라를 표준화**하고  
-> 운영·로깅·확장성 문제를 줄이기 위한 Core 레이어입니다.
-
----
+UNLICENSED
