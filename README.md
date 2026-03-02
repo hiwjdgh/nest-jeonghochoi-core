@@ -8,7 +8,7 @@ NestJS 기반 서비스에서 공통 인프라(로깅, DB, Redis, Health, 인증
   - 전역(`@Global`) 모듈
   - `RequestContextMiddleware` + `HttpLoggerMiddleware`를 모든 라우트에 자동 적용
   - 전역 `HttpExceptionFilter` 등록
-  - 옵션에 따라 Logger/Database/Redis 모듈 동적 로딩
+  - 옵션에 따라 Logger/Database/Redis/JWT/RBAC 모듈 동적 로딩
 - `DatabaseModule`
   - `TypeOrmModule.forRoot()` 패턴 대신 `DatabaseConnectionResolver`로 런타임 연결
   - `databaseKey + schema` 조합으로 DataSource 캐싱
@@ -17,7 +17,7 @@ NestJS 기반 서비스에서 공통 인프라(로깅, DB, Redis, Health, 인증
 - `HealthModule`
   - `/health/live`, `/health/ready` 엔드포인트 제공
 - `JwtModule`, `RbacModule`
-  - 앱에서 필요 시 별도 `forRoot()`로 조합
+  - `CoreModule` 내부 옵션 또는 앱에서 직접 `forRoot()`로 조합
 
 ---
 
@@ -105,6 +105,15 @@ import { CoreModule } from '@jeonghochoi/core';
         host: process.env.REDIS_HOST ?? '127.0.0.1',
         port: Number(process.env.REDIS_PORT ?? 6379),
       },
+      jwt: {
+        enabled: true,
+        secret: process.env.JWT_SECRET!,
+        signOptions: { expiresIn: '1h' },
+      },
+      rbac: {
+        enabled: true,
+        // contextProvider, permissionChecker 구현체를 앱에서 주입
+      },
     }),
   ],
 })
@@ -181,6 +190,16 @@ export interface CoreOptions {
     keyPrefix?: string;
     enableReadyCheck?: boolean;
   };
+  jwt?: {
+    enabled?: boolean;
+    secret: string;
+    signOptions?: JwtSignOptions;
+  };
+  rbac?: {
+    enabled?: boolean;
+    contextProvider?: Type<RbacContextProvider>;
+    permissionChecker?: Type<PermissionChecker>;
+  };
 }
 ```
 
@@ -188,7 +207,7 @@ export interface CoreOptions {
 
 ## JWT / RBAC 모듈 사용 (선택)
 
-`CoreModule`과 별개로, 인증/인가가 필요하면 앱에서 직접 등록해서 사용합니다.
+기본적으로 `CoreModule.forRoot()` 옵션으로 함께 등록할 수 있고, 필요하면 기존처럼 앱에서 직접 등록해서 사용해도 됩니다.
 
 ```ts
 import { Module } from '@nestjs/common';
@@ -215,6 +234,8 @@ export class AuthModule {}
 - `CoreModule`에서 `logger`를 생략하면 로거 모듈이 로딩되지 않습니다.
 - `database.enabled !== false` 이고 `database.registry`가 있어야 DB 모듈이 로딩됩니다.
 - `redis.enabled !== false` 이고 `redis` 옵션이 있어야 Redis 모듈이 로딩됩니다.
+- `jwt.enabled !== false` 이고 `jwt` 옵션이 있어야 JWT 모듈이 로딩됩니다.
+- `rbac.enabled !== false` 이고 `rbac` 옵션이 있어야 RBAC 모듈이 로딩됩니다.
 - DB 연결은 요청 시점에 생성되며 캐시됩니다. 앱 종료 시 커넥션 정리 전략은 앱 레벨에서 함께 고려하세요.
 
 ---
@@ -230,4 +251,4 @@ export class AuthModule {}
 
 ## License
 
-UNLICENSED
+MIT

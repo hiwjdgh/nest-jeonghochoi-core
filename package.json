@@ -3,7 +3,7 @@
     "version": "0.1.4",
     "description": "NestJS Core infrastructure module",
     "author": "jeonghochoi",
-    "license": "UNLICENSED",
+    "license": "MIT",
     "private": false,
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
