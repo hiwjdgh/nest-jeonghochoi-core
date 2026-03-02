@@ -16,6 +16,8 @@ import { HealthModule } from './health/health.module';
 import { RequestContextService } from './request-context/request-context.service';
 import { CoreOptions } from './core.options';
 import { coreOptionsSchema } from './core.schema';
+import { JwtModule } from './jwt';
+import { RbacModule } from './rbac';
 
 @Global()
 @Module({
@@ -30,7 +32,7 @@ import { coreOptionsSchema } from './core.schema';
 })
 export class CoreModule implements NestModule {
     static forRoot(options: CoreOptions = {}): DynamicModule {
-        const parsed = coreOptionsSchema.parse(options);
+        const parsed = coreOptionsSchema.parse(options) as CoreOptions;
         const imports: DynamicModule['imports'] = [];
         const exports: DynamicModule['exports'] = [];
 
@@ -53,6 +55,32 @@ export class CoreModule implements NestModule {
             if (parsed.database?.registry) {
                 imports.push(DatabaseModule.forRoot(parsed.database.registry));
                 exports.push(DatabaseModule);
+            }
+        }
+
+        // JWT (선택)
+        if (parsed.jwt?.enabled !== false) {
+            if (parsed.jwt) {
+                imports.push(
+                    JwtModule.forRoot({
+                        secret: parsed.jwt.secret,
+                        signOptions: parsed.jwt.signOptions,
+                    }),
+                );
+                exports.push(JwtModule);
+            }
+        }
+
+        // RBAC (선택)
+        if (parsed.rbac?.enabled !== false) {
+            if (parsed.rbac) {
+                imports.push(
+                    RbacModule.forRoot({
+                        contextProvider: parsed.rbac.contextProvider,
+                        permissionChecker: parsed.rbac.permissionChecker,
+                    }),
+                );
+                exports.push(RbacModule);
             }
         }
 
