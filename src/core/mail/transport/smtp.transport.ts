@@ -1,7 +1,7 @@
 import nodemailer, { Transporter } from 'nodemailer';
 import { MailTransport } from './mail.transport.interface.js';
 import { MailSendOptions } from '../mail.types.js';
-import { SmtpConfig } from '../../config/schemas/mail.smtp.schema.js';
+import { SmtpMailTransportOptions } from '../mail.options.js';
 
 export class SmtpTransport implements MailTransport {
     readonly name = 'smtp';
@@ -9,7 +9,7 @@ export class SmtpTransport implements MailTransport {
     private readonly transporter: Transporter;
     private readonly from?: string;
 
-    constructor(private readonly config: SmtpConfig) {
+    constructor(private readonly config: SmtpMailTransportOptions) {
         this.from = config.from;
 
         this.transporter = nodemailer.createTransport({

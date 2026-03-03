@@ -9,20 +9,23 @@ export class MailService {
     constructor(
         private readonly transports: MailTransportRegistry,
         private readonly templateLoader: MailTemplateLoader,
-        private readonly templateRenderer: MailTemplateRenderer
+        private readonly templateRenderer: MailTemplateRenderer,
     ) {}
 
-    async send(
-        transport: 'smtp' | 'ses',
+    async send(transportName: string, options: MailSendOptions) {
+        await this.transports.use(transportName).send(options);
+    }
+
+    async sendTemplate(
+        transportName: string,
         templateName: string,
         context: Record<string, any>,
-        options: Omit<MailSendOptions, 'html'>
+        options: Omit<MailSendOptions, 'html'>,
     ) {
         const source = await this.templateLoader.loadTemplate(templateName);
-
         const html = this.templateRenderer.renderTemplate(source, context);
 
-        await this.transports.use(transport).send({
+        await this.send(transportName, {
             ...options,
             html,
         });
