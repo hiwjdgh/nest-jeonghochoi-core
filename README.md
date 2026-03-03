@@ -161,6 +161,90 @@ export class CacheService {
 }
 ```
 
+
+## 5) File / Mail 멀티 인스턴스 간단 사용 예시
+
+앱 하나에서 FTP/SMTP를 여러 개 써야 하는 경우를 위해, `name` 기반으로 간단히 꺼내 쓰도록 구성했습니다.
+
+```ts
+CoreModule.forRoot({
+  file: {
+    uploader: {
+      reportFtp: {
+        type: 'ftp',
+        host: 'ftp-a.example.com',
+        user: 'a',
+        password: '***',
+      },
+      archiveS3: {
+        type: 's3',
+        region: 'ap-northeast-2',
+        bucket: 'archive-bucket',
+      },
+    },
+    writer: {
+      csvDefault: { type: 'csv' },
+      excelDefault: { type: 'excel' },
+    },
+  },
+  mail: {
+    templateDir: 'templates/mail',
+    transports: {
+      noticeSmtp: {
+        type: 'smtp',
+        host: 'smtp.notice.example.com',
+        port: 587,
+        user: 'notice',
+        password: '***',
+      },
+      marketingSes: {
+        type: 'ses',
+        region: 'ap-northeast-2',
+        credentials: {
+          accessKeyId: process.env.SES_KEY!,
+          secretAccessKey: process.env.SES_SECRET!,
+        },
+        from: 'no-reply@example.com',
+      },
+    },
+  },
+});
+```
+
+```ts
+@Injectable()
+export class ReportService {
+  constructor(
+    private readonly fileService: FileService,
+    private readonly mailService: MailService,
+  ) {}
+
+  async execute() {
+    const { filePath } = await this.fileService.write('csvDefault', [{ id: 1 }], {
+      filePath: 'tmp/report.csv',
+      headers: ['id'],
+    });
+
+    await this.fileService.upload('reportFtp', filePath, {
+      remotePath: '/daily/report.csv',
+    });
+
+    await this.mailService.sendTemplate(
+      'noticeSmtp',
+      'daily-report',
+      { date: '2026-01-01' },
+      {
+        to: 'ops@example.com',
+        subject: '[Report] Daily Result',
+      },
+    );
+  }
+}
+```
+
+핵심은 **"설정은 여러 개 등록" + "사용할 때 이름으로 선택"** 입니다.
+
+---
 ## 4) Health Check 호출
 
 - Liveness: `GET /health/live`

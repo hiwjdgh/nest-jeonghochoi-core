@@ -1,61 +1,45 @@
-import { Global, Module } from '@nestjs/common';
-import { CoreConfigService } from '../config';
-import { MailService } from './mail.service';
+import { DynamicModule, Global, Module } from '@nestjs/common';
+import { MailService } from './mail.service.js';
+import { MailOptions } from './mail.options.js';
 
-import { MailTransportRegistry } from './transport/mail.transport.registry';
-import { SmtpTransport } from './transport/smtp.transport';
-import { SesTransport } from './transport/ses.transport';
+import { MailTransportRegistry } from './transport/mail.transport.registry.js';
+import { SmtpTransport } from './transport/smtp.transport.js';
+import { SesTransport } from './transport/ses.transport.js';
 
-import { MailTemplateLoader } from './template/mail.template.loader';
-import { MailTemplateRenderer } from './template/mail.template.renderer';
+import { MailTemplateLoader } from './template/mail.template.loader.js';
+import { MailTemplateRenderer } from './template/mail.template.renderer.js';
 
 @Global()
-@Module({
-    providers: [
-        // transport registry
-        MailTransportRegistry,
+@Module({})
+export class MailModule {
+    static forRoot(options: MailOptions = {}): DynamicModule {
+        const registry = new MailTransportRegistry();
 
-        // template loader (dir 주입 지점)
-        {
-            provide: MailTemplateLoader,
-            inject: [CoreConfigService],
-            useFactory: (config: CoreConfigService<any>) =>
-                new MailTemplateLoader(config.get().mailTemplateDir),
-        },
+        Object.entries(options.transports ?? {}).forEach(([name, config]) => {
+            if (config.type === 'smtp') {
+                registry.register(name, new SmtpTransport(config));
+                return;
+            }
 
-        // template renderer (순수)
-        MailTemplateRenderer,
+            registry.register(name, new SesTransport(config));
+        });
 
-        // transport 초기화 (side-effect)
-        {
-            provide: 'MAIL_TRANSPORTS_INIT',
-            inject: [CoreConfigService, MailTransportRegistry],
-            useFactory: (
-                config: CoreConfigService<any>,
-                registry: MailTransportRegistry
-            ) => {
-                const mailConfig = config.get();
-
-                if (mailConfig.smtp) {
-                    registry.register(
-                        'smtp',
-                        new SmtpTransport(mailConfig.smtp)
-                    );
-                }
-
-                if (mailConfig.ses) {
-                    registry.register('ses', new SesTransport(mailConfig.ses));
-                }
-
-                if (!mailConfig.smtp && !mailConfig.ses) {
-                    throw new Error('No mail transport configured');
-                }
-            },
-        },
-
-        // MailService (이제 config 필요 없음)
-        MailService,
-    ],
-    exports: [MailService],
-})
-export class MailModule {}
+        return {
+            module: MailModule,
+            providers: [
+                {
+                    provide: MailTransportRegistry,
+                    useValue: registry,
+                },
+                {
+                    provide: MailTemplateLoader,
+                    useFactory: () =>
+                        new MailTemplateLoader(options.templateDir ?? 'templates/mail'),
+                },
+                MailTemplateRenderer,
+                MailService,
+            ],
+            exports: [MailService, MailTransportRegistry],
+        };
+    }
+}

@@ -43,7 +43,18 @@ const databaseDefinitionSchema = z.union([
     mssqlDefinitionSchema,
 ]);
 
-const SesConfigSchema = z.object({
+const smtpTransportSchema = z.object({
+    type: z.literal('smtp'),
+    host: z.string(),
+    port: z.coerce.number(),
+    secure: z.boolean().optional(),
+    user: z.string(),
+    password: z.string(),
+    from: z.string().optional(),
+});
+
+const sesTransportSchema = z.object({
+    type: z.literal('ses'),
     region: z.string(),
     credentials: z.object({
         accessKeyId: z.string(),
@@ -52,44 +63,44 @@ const SesConfigSchema = z.object({
     from: z.string(),
 });
 
-const SmtpConfigSchema = z.object({
+const mailTransportSchema = z.union([smtpTransportSchema, sesTransportSchema]);
+
+const csvWriterSchema = z.object({
+    type: z.literal('csv'),
+    path: z.string().optional(),
+});
+
+const excelWriterSchema = z.object({
+    type: z.literal('excel'),
+    path: z.string().optional(),
+});
+
+const writerSchema = z.union([csvWriterSchema, excelWriterSchema]);
+
+const ftpUploaderSchema = z.object({
+    type: z.literal('ftp'),
     host: z.string(),
-    port: z.coerce.number(),
-    secure: z.boolean().default(false),
+    port: z.coerce.number().optional(),
     user: z.string(),
     password: z.string(),
-    from: z.string(),
-});
-
-const MailSchema = z.union([SesConfigSchema, SmtpConfigSchema]);
-
-const CsvConfigScema = z.object({
-    path: z.string(),
-});
-
-const ExcelConfigScema = z.object({
-    path: z.string(),
-});
-
-const FileWriterSchema = z.union([CsvConfigScema, ExcelConfigScema]);
-
-const FtpConfigSchema = z.object({
-    host: z.string(),
-    port: z.coerce.number().default(21),
-    user: z.string(),
-    password: z.string(),
-    secure: z.boolean().default(false),
+    secure: z.boolean().optional(),
     basePath: z.string().optional(),
 });
 
-const S3ConfigSchema = z.object({
+const s3UploaderSchema = z.object({
+    type: z.literal('s3'),
     region: z.string(),
     bucket: z.string(),
     accessKeyId: z.string().optional(),
     secretAccessKey: z.string().optional(),
 });
 
-const FileUploaderSchema = z.union([FtpConfigSchema, S3ConfigSchema]);
+const localUploaderSchema = z.object({
+    type: z.literal('local'),
+    basePath: z.string().optional(),
+});
+
+const uploaderSchema = z.union([ftpUploaderSchema, s3UploaderSchema, localUploaderSchema]);
 
 export const coreOptionsSchema = z.object({
     logger: z
@@ -98,7 +109,6 @@ export const coreOptionsSchema = z.object({
             appName: z.string().min(1),
         })
         .optional(),
-
     redis: z
         .object({
             enabled: z.boolean().optional(),
@@ -106,14 +116,12 @@ export const coreOptionsSchema = z.object({
             port: z.number().int().min(1).max(65535),
         })
         .optional(),
-
     database: z
         .object({
             enabled: z.boolean().optional(),
             registry: z.record(z.string(), databaseDefinitionSchema).optional(),
         })
         .optional(),
-
     jwt: z
         .object({
             enabled: z.boolean().optional(),
@@ -121,7 +129,6 @@ export const coreOptionsSchema = z.object({
             signOptions: jwtSignOptionsSchema.optional(),
         })
         .optional(),
-
     rbac: z
         .object({
             enabled: z.boolean().optional(),
@@ -129,15 +136,18 @@ export const coreOptionsSchema = z.object({
             permissionChecker: z.custom<object>().optional(),
         })
         .optional(),
-
-    file: z.object({
-        enable: z.boolean().optional(),
-        uploader: z.record(z.string(), FileUploaderSchema).optional(),
-        writer: z.record(z.string(), FileWriterSchema).optional,
-    }),
-
-    mail: z.object({
-        enable: z.boolean().optional(),
-        registry: z.record(z.string(), MailSchema).optional(),
-    }),
+    file: z
+        .object({
+            enabled: z.boolean().optional(),
+            uploader: z.record(z.string(), uploaderSchema).optional(),
+            writer: z.record(z.string(), writerSchema).optional(),
+        })
+        .optional(),
+    mail: z
+        .object({
+            enabled: z.boolean().optional(),
+            templateDir: z.string().optional(),
+            transports: z.record(z.string(), mailTransportSchema).optional(),
+        })
+        .optional(),
 });

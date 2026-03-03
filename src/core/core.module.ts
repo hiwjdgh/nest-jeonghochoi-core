@@ -18,6 +18,8 @@ import { CoreOptions } from './core.options';
 import { coreOptionsSchema } from './core.schema';
 import { JwtModule } from './jwt';
 import { RbacModule } from './rbac';
+import { FileModule } from './file/file.module.js';
+import { MailModule } from './mail/mail.module.js';
 
 @Global()
 @Module({
@@ -36,65 +38,49 @@ export class CoreModule implements NestModule {
         const imports: DynamicModule['imports'] = [];
         const exports: DynamicModule['exports'] = [];
 
-        // Logger (필수)
         if (parsed.logger) {
             imports.push(LoggerModule.forRoot(parsed.logger));
             exports.push(LoggerModule);
         }
 
-        // Redis (선택)
-        if (parsed.redis?.enabled !== false) {
-            if (parsed.redis) {
-                imports.push(RedisModule.forRoot(parsed.redis));
-                exports.push(RedisModule);
-            }
+        if (parsed.redis?.enabled !== false && parsed.redis) {
+            imports.push(RedisModule.forRoot(parsed.redis));
+            exports.push(RedisModule);
         }
 
-        // Database (선택)
-        if (parsed.database?.enabled !== false) {
-            if (parsed.database?.registry) {
-                imports.push(DatabaseModule.forRoot(parsed.database.registry));
-                exports.push(DatabaseModule);
-            }
+        if (parsed.database?.enabled !== false && parsed.database?.registry) {
+            imports.push(DatabaseModule.forRoot(parsed.database.registry));
+            exports.push(DatabaseModule);
         }
 
-        // JWT (선택)
-        if (parsed.jwt?.enabled !== false) {
-            if (parsed.jwt) {
-                imports.push(
-                    JwtModule.forRoot({
-                        secret: parsed.jwt.secret,
-                        signOptions: parsed.jwt.signOptions,
-                    }),
-                );
-                exports.push(JwtModule);
-            }
+        if (parsed.jwt?.enabled !== false && parsed.jwt) {
+            imports.push(
+                JwtModule.forRoot({
+                    secret: parsed.jwt.secret,
+                    signOptions: parsed.jwt.signOptions,
+                }),
+            );
+            exports.push(JwtModule);
         }
 
-        // RBAC (선택)
-        if (parsed.rbac?.enabled !== false) {
-            if (parsed.rbac) {
-                imports.push(
-                    RbacModule.forRoot({
-                        contextProvider: parsed.rbac.contextProvider,
-                        permissionChecker: parsed.rbac.permissionChecker,
-                    }),
-                );
-                exports.push(RbacModule);
-            }
+        if (parsed.rbac?.enabled !== false && parsed.rbac) {
+            imports.push(
+                RbacModule.forRoot({
+                    contextProvider: parsed.rbac.contextProvider,
+                    permissionChecker: parsed.rbac.permissionChecker,
+                }),
+            );
+            exports.push(RbacModule);
         }
 
-        // RBAC (선택)
-        if (parsed.rbac?.enabled !== false) {
-            if (parsed.rbac) {
-                imports.push(
-                    RbacModule.forRoot({
-                        contextProvider: parsed.rbac.contextProvider,
-                        permissionChecker: parsed.rbac.permissionChecker,
-                    }),
-                );
-                exports.push(RbacModule);
-            }
+        if (parsed.file?.enabled !== false && parsed.file) {
+            imports.push(FileModule.forRoot(parsed.file));
+            exports.push(FileModule);
+        }
+
+        if (parsed.mail?.enabled !== false && parsed.mail) {
+            imports.push(MailModule.forRoot(parsed.mail));
+            exports.push(MailModule);
         }
 
         return {
