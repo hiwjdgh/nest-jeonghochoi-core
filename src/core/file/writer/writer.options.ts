@@ -1,10 +1,12 @@
-export type CsvWriterOptions = {
-    path: string;
-};
+export interface CsvWriterOptions {
+    type: 'csv';
+    path?: string;
+}
 
-export type ExcelWriterOptions = {
-    path: string;
-};
+export interface ExcelWriterOptions {
+    type: 'excel';
+    path?: string;
+}
 
 export type WriterDefinition = CsvWriterOptions | ExcelWriterOptions;
 

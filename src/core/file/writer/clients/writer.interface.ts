@@ -1,4 +1,4 @@
-import { FileWriteResult } from '../../file.types';
+import { FileWriteResult } from '../../file.types.js';
 
 export interface FileWriter<T = any> {
     write(
