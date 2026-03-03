@@ -100,7 +100,11 @@ const localUploaderSchema = z.object({
     basePath: z.string().optional(),
 });
 
-const uploaderSchema = z.union([ftpUploaderSchema, s3UploaderSchema, localUploaderSchema]);
+const uploaderSchema = z.union([
+    ftpUploaderSchema,
+    s3UploaderSchema,
+    localUploaderSchema,
+]);
 
 export const coreOptionsSchema = z.object({
     logger: z

@@ -4,7 +4,9 @@ import { FileUploader } from './uploader.interface.js';
 import { LocalUploaderOptions } from '../uploder.options.js';
 
 export class LocalUploader implements FileUploader {
-    constructor(private readonly config: LocalUploaderOptions = { type: 'local' }) {}
+    constructor(
+        private readonly config: LocalUploaderOptions = { type: 'local' },
+    ) {}
 
     async upload(localPath: string, { destDir }: { destDir?: string }) {
         const fileName = path.basename(localPath);

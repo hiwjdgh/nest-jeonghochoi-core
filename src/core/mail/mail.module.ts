@@ -34,7 +34,9 @@ export class MailModule {
                 {
                     provide: MailTemplateLoader,
                     useFactory: () =>
-                        new MailTemplateLoader(options.templateDir ?? 'templates/mail'),
+                        new MailTemplateLoader(
+                            options.templateDir ?? 'templates/mail',
+                        ),
                 },
                 MailTemplateRenderer,
                 MailService,

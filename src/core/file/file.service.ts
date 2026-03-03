@@ -9,7 +9,11 @@ export class FileService {
         private readonly writers: WriterRegistry,
     ) {}
 
-    upload<TOptions = any>(uploaderName: string, localPath: string, options: TOptions) {
+    upload<TOptions = any>(
+        uploaderName: string,
+        localPath: string,
+        options: TOptions,
+    ) {
         return this.uploaders.use(uploaderName).upload(localPath, options);
     }
 
