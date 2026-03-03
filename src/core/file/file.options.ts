@@ -1,7 +1,8 @@
-import { UploaderOptions } from './uploader/uploder.options';
+import { UploderOptions } from './uploader/uploder.options';
+import { WriterOptions } from './writer/writer.options';
 
 export interface FileOptions {
     enabled?: boolean;
-    uploader: UploaderOptions;
-    writer: DatabaseRegistry;
+    uploader: UploderOptions;
+    writer: WriterOptions;
 }

@@ -1,4 +1,4 @@
-import { FileWriteResult } from '../file.types.js';
+import { FileWriteResult } from '../../file.types';
 
 export interface FileWriter<T = any> {
     write(
@@ -6,6 +6,6 @@ export interface FileWriter<T = any> {
         options: {
             filePath: string;
             headers?: string[];
-        }
+        },
     ): Promise<FileWriteResult>;
 }

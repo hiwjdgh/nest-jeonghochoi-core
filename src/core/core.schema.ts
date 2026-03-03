@@ -82,16 +82,12 @@ const FtpConfigSchema = z.object({
     basePath: z.string().optional(),
 });
 
-export type FtpConfig = z.infer<typeof FtpConfigSchema>;
-
 const S3ConfigSchema = z.object({
     region: z.string(),
     bucket: z.string(),
     accessKeyId: z.string().optional(),
     secretAccessKey: z.string().optional(),
 });
-
-export type S3Config = z.infer<typeof S3ConfigSchema>;
 
 const FileUploaderSchema = z.union([FtpConfigSchema, S3ConfigSchema]);
 
