@@ -4,7 +4,7 @@ import { FileWriter } from './writer.interface.js';
 export class ExcelWriter<T = any> implements FileWriter<T> {
     async write(
         rows: T[],
-        { filePath, headers }: { filePath: string; headers?: string[] }
+        { filePath, headers }: { filePath: string; headers?: string[] },
     ) {
         const workbook = new Excel.stream.xlsx.WorkbookWriter({
             filename: filePath,

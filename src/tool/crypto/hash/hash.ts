@@ -8,7 +8,7 @@ export class Hash {
     static hmacSha256(
         data: string,
         secret: string,
-        output: 'hex' | 'base64' = 'hex'
+        output: 'hex' | 'base64' = 'hex',
     ): string {
         return crypto.createHmac('sha256', secret).update(data).digest(output);
     }

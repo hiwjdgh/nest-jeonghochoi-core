@@ -45,7 +45,7 @@ export class SesTransport implements MailTransport {
                         Html: { Data: options.html ?? '' },
                     },
                 },
-            })
+            }),
         );
     }
 }

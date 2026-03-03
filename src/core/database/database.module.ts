@@ -10,7 +10,9 @@ import { DatabaseConnectionResolver } from './resolver';
 
 export const DATABASE_REGISTRY = Symbol('DATABASE_REGISTRY');
 
-export const DATABASE_CONNECTION_CLEANUP = Symbol('DATABASE_CONNECTION_CLEANUP');
+export const DATABASE_CONNECTION_CLEANUP = Symbol(
+    'DATABASE_CONNECTION_CLEANUP',
+);
 
 class DatabaseConnectionCleanupService implements OnModuleDestroy {
     constructor(private readonly cache: ConnectionCache) {}

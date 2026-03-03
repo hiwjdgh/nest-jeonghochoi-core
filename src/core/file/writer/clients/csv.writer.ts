@@ -5,7 +5,7 @@ import { FileWriter } from './writer.interface.js';
 export class CsvWriter<T = any> implements FileWriter<T> {
     async write(
         rows: T[],
-        { filePath, headers }: { filePath: string; headers?: string[] }
+        { filePath, headers }: { filePath: string; headers?: string[] },
     ) {
         await new Promise<void>((resolve, reject) => {
             const output = fs.createWriteStream(filePath);

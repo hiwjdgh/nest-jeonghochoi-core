@@ -10,7 +10,7 @@ export class HttpEndpoint {
     post<T = any>(
         url: string,
         body?: any,
-        config?: AxiosRequestConfig
+        config?: AxiosRequestConfig,
     ): Promise<T> {
         return this.client.post<T>(url, body, config).then((r) => r.data);
     }
@@ -18,7 +18,7 @@ export class HttpEndpoint {
     put<T = any>(
         url: string,
         body?: any,
-        config?: AxiosRequestConfig
+        config?: AxiosRequestConfig,
     ): Promise<T> {
         return this.client.put<T>(url, body, config).then((r) => r.data);
     }
