@@ -1,13 +1,17 @@
 import fs from 'fs';
 import path from 'path';
-import { FileUploader } from './uploader.interface';
+import { FileUploader } from './uploader.interface.js';
+import { LocalUploaderOptions } from '../uploder.options.js';
 
 export class LocalUploader implements FileUploader {
-    async upload(localPath: string, { destDir }: { destDir: string }) {
-        const fileName = path.basename(localPath);
-        const destPath = path.join(destDir, fileName);
+    constructor(private readonly config: LocalUploaderOptions = { type: 'local' }) {}
 
-        await fs.promises.mkdir(destDir, { recursive: true });
+    async upload(localPath: string, { destDir }: { destDir?: string }) {
+        const fileName = path.basename(localPath);
+        const baseDir = destDir ?? this.config.basePath ?? '.';
+        const destPath = path.join(baseDir, fileName);
+
+        await fs.promises.mkdir(baseDir, { recursive: true });
         await fs.promises.copyFile(localPath, destPath);
 
         return { location: destPath };

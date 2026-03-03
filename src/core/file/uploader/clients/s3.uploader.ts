@@ -1,13 +1,13 @@
 import fs from 'fs';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { FileUploader } from './uploader.interface.js';
-import { S3Config } from 'src/core/core.schema.js';
+import { S3UploaderOptions } from '../uploder.options.js';
 
 export class S3Uploader implements FileUploader {
     private client: S3Client;
     private bucket: string;
 
-    constructor(config: S3Config) {
+    constructor(config: S3UploaderOptions) {
         this.bucket = config.bucket;
         this.client = new S3Client({
             region: config.region,

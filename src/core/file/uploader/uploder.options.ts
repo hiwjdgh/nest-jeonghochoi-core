@@ -1,21 +1,29 @@
-export type SesUploaderOPtions = {
-    region: string;
-    credentials: {
-        accessKeyId: string;
-        secretAccessKey: string;
-    };
-    from: string;
-};
-
-export type SmtpConfigSchema = {
+export interface FtpUploaderOptions {
+    type: 'ftp';
     host: string;
-    port: number;
-    secure: string;
+    port?: number;
     user: string;
     password: string;
-    from: string;
-};
+    secure?: boolean;
+    basePath?: string;
+}
 
-export type UploderDefinition = SesUploaderOPtions | SmtpConfigSchema;
+export interface S3UploaderOptions {
+    type: 's3';
+    region: string;
+    bucket: string;
+    accessKeyId?: string;
+    secretAccessKey?: string;
+}
 
-export type UploderOptions = Record<string, UploderDefinition>;
+export interface LocalUploaderOptions {
+    type: 'local';
+    basePath?: string;
+}
+
+export type UploaderDefinition =
+    | FtpUploaderOptions
+    | S3UploaderOptions
+    | LocalUploaderOptions;
+
+export type UploaderOptions = Record<string, UploaderDefinition>;
